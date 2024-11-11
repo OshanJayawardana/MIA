@@ -4,7 +4,7 @@ A membership inference attack on Resnet18
 ## RMIA Offline
 
 Initially experiments are done to select best `a` value for the offline attack.
-For the `a` experiments we fix gamma=2, k(num_reference_models)=8, |Z| = 250
+For the `a` experiments we fix gamma=2, k(num_reference_models)=8, |Z| = 500
 
 | a Value | TPR@0.05FPR |
 |---------|-------------|
