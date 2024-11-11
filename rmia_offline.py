@@ -163,9 +163,6 @@ if __name__ == "__main__":
 
     # get list of model names that starts wih reference
     model_names = [name for name in os.listdir("models") if name.startswith("reference")]
-    #randomly shuffle the model names and select 8 models
-    np.random.shuffle(model_names)
-    model_names = model_names[:8]
     # load the models
     out_models = [torch.load(f"models/{name}") for name in model_names]
     # load the target model
@@ -175,10 +172,10 @@ if __name__ == "__main__":
     # load the distribution dataset
     distribution_data: MembershipDataset = torch.load("data/pub.pt")
     #only pick 250 random samples from the distribution data
-    indexes = np.random.choice(len(distribution_data), 500)
+    indexes = np.random.choice(len(distribution_data), 2500)
     distribution_data = get_sample(distribution_data, indexes)
     # calculate the RMIA score
-    for a in [1]:
+    for a in [0.5]:
         scores = get_rmia_score(test_dataset, out_models, target_model, a, distribution_data)
         df = pd.DataFrame({"ids": test_dataset.ids, "score": scores})
         df.to_csv(f"rmia_offline_scores_a_{a}.csv", index=False)

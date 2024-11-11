@@ -13,4 +13,4 @@ For the `a` experiments we fix gamma=2, k(num_reference_models)=8, |Z| = 500
 | 0.3     |             |
 | 0.4     |             |
 | 0.5     | 0.054       |
-| 1.0     |             |
+| 1.0     | 0.044       |
