@@ -9,7 +9,7 @@ For the `a` experiments we fix gamma=2, k(num_reference_models)=8, |Z| = 250
 | a Value | TPR@0.05FPR |
 |---------|-------------|
 | 0.1     | 0.0507      |
-| 0.2     |             |
+| 0.2     | 0.052       |
 | 0.3     |             |
 | 0.4     |             |
 | 0.5     | 0.054       |

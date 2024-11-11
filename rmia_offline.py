@@ -178,7 +178,7 @@ if __name__ == "__main__":
     indexes = np.random.choice(len(distribution_data), 500)
     distribution_data = get_sample(distribution_data, indexes)
     # calculate the RMIA score
-    for a in [0.1, 0.2, 0.3, 0.4, 1]:
+    for a in [1]:
         scores = get_rmia_score(test_dataset, out_models, target_model, a, distribution_data)
         df = pd.DataFrame({"ids": test_dataset.ids, "score": scores})
         df.to_csv(f"rmia_offline_scores_a_{a}.csv", index=False)
