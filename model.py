@@ -1,7 +1,7 @@
 from torchvision.models import resnet18
 import torch
 import torch.nn as nn
-from preprocess import MembershipDataset
+from preprocess import MembershipDataset, PseudoLabelDataset
 import torchvision.transforms as transforms
 from tqdm import tqdm
 
@@ -9,35 +9,26 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def train_resnet18(dataset: MembershipDataset, epochs: int, apply_transforms: bool = True):
     """Train a resnet18 model on the dataset. Apply random transformations to the images if apply_transforms is True."""
-    model = resnet18(pretrained=False)
+    model = resnet18(pretrained=True)
     model.fc = torch.nn.Linear(512, 44)
-    
-    # Randomize the weights
-    def initialize_weights(model):
-        for m in model.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.ones_(m.weight)
-                nn.init.zeros_(m.bias)
-            elif isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, 0, 0.01)
-                nn.init.zeros_(m.bias)
-    
-    model.apply(initialize_weights)
     model.to(device)
 
+    # only fine tune the fc layer
+    for param in model.parameters():
+        param.requires_grad = False
+    for param in model.fc.parameters():
+        param.requires_grad = True
+
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     transform = transforms.Compose([
         transforms.RandomResizedCrop((32, 32)),
         transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
     ])
 
-    imgs, labels = dataset[:][1], dataset[:][2]
+    imgs, labels = dataset[:][1], dataset[:][4]
     if apply_transforms:
         imgs = [transform(img) for img in imgs]
     imgs = torch.stack(imgs)
@@ -55,6 +46,14 @@ def train_resnet18(dataset: MembershipDataset, epochs: int, apply_transforms: bo
         loss = criterion(outputs, labels.to(device))
         loss.backward()
         optimizer.step()
+
+        # calculate accuracy
+        _, preds = torch.max(outputs, 1)
+        correct = (preds == labels.to(device)).sum().item()
+        acc = correct / len(labels)
+
+        print(f"Epoch {epoch + 1}/{epochs}, Loss: {loss.item()}, Accuracy: {acc}")
+
     return model
 
 

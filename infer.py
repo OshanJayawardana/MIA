@@ -9,7 +9,7 @@ from torchvision.models import resnet18
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def infer(model: Module, data: MembershipDataset) -> pd.DataFrame:
+def infer(model: Module, data: MembershipDataset) -> torch.Tensor:
     """Infer the model on the data.
 
     Args:
@@ -28,16 +28,17 @@ def infer(model: Module, data: MembershipDataset) -> pd.DataFrame:
             logits = model(img[None, ...].to(device))
             scores.append(logits.cpu())
         scores = torch.cat(scores)
-    score_dict = {f"score_class_{i}": scores[:, i] for i in range(scores.shape[1])}
-    df = pd.DataFrame(
-        {
-            "ids": data.ids,
-            "label": data.labels,
-            "membership": data.membership,
-            **score_dict
-        }
-    )
-    return df
+    return scores
+    # score_dict = {f"score_class_{i}": scores[:, i] for i in range(scores.shape[1])}
+    # df = pd.DataFrame(
+    #     {
+    #         "ids": data.ids,
+    #         "label": data.labels,
+    #         "membership": data.membership,
+    #         **score_dict
+    #     }
+    # )
+    # return df
 
 if __name__ == "__main__":
     model = load_target_model()

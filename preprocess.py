@@ -34,3 +34,19 @@ class MembershipDataset(TaskDataset):
     def __getitem__(self, index) -> tuple[int, torch.Tensor, int, int]:
         id_, img, label = super().__getitem__(index)
         return id_, img, label, self.membership[index]
+
+
+# create a new dataset class which inherits from MembershipDataset but has both membership and pseudo-labels
+class PseudoLabelDataset(TaskDataset):
+    """Dataset for the task of predicting the class of an image and its pseudo-label"""
+
+    def __init__(self, transform=None):
+        super().__init__(transform)
+        self.membership = []
+        self.pseudo_labels = []
+
+    def __getitem__(self, index) -> tuple[int, torch.Tensor, int, int, int]:
+        id_, img, label = super().__getitem__(index)
+        pseudo_label = self.pseudo_labels[index]
+        membership = self.membership[index]
+        return id_, img, label, membership, pseudo_label
