@@ -28,10 +28,10 @@ def append_pseudo_labels(dataset: MembershipDataset):
     return new_dataset
 
 dataset_list = [
-    ("data/train.pt", "data/train_w_pseudo.pt"), 
+    # ("data/train.pt", "data/train_w_pseudo.pt"), 
     ("data/pub.pt", "data/pub_w_pseudo.pt"),
     ("data/priv_out.pt", "data/priv_out_w_pseudo.pt"), 
-    ("data/val.pt", "data/val_w_pseudo.pt")
+    # ("data/val.pt", "data/val_w_pseudo.pt")
     ]
 
 for dataset_path, save_path in dataset_list:

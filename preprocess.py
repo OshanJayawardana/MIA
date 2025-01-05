@@ -50,3 +50,45 @@ class PseudoLabelDataset(TaskDataset):
         pseudo_label = self.pseudo_labels[index]
         membership = self.membership[index]
         return id_, img, label, membership, pseudo_label
+
+class ActivationDataset(TaskDataset):
+    """Dataset for the task of predicting the class of an image and its activations"""
+
+    def __init__(self, transform=None):
+        super().__init__(transform)
+        self.membership = []
+        self.activations = []
+
+    def __getitem__(self, index) -> tuple[int, torch.Tensor, int, int, int]:
+        id_, img, label = super().__getitem__(index)
+        activations = self.activations[index]
+        membership = self.membership[index]
+        return id_, img, label, membership, activations
+
+class GradientDataset(TaskDataset):
+    """Dataset for the task of predicting the class of an image and its gradients"""
+
+    def __init__(self, transform=None):
+        super().__init__(transform)
+        self.membership = []
+        self.gradients = []
+
+    def __getitem__(self, index) -> tuple[int, torch.Tensor, int, int, int]:
+        id_, img, label = super().__getitem__(index)
+        gradients = self.gradients[index]
+        membership = self.membership[index]
+        return id_, img, label, membership, gradients
+
+class LogitstDataset(TaskDataset):
+    """Dataset for the task of predicting the class of an image and its logitss"""
+
+    def __init__(self, transform=None):
+        super().__init__(transform)
+        self.membership = []
+        self.logits = []
+
+    def __getitem__(self, index) -> tuple[int, torch.Tensor, int, int, int]:
+        id_, img, label = super().__getitem__(index)
+        logits = self.logits[index]
+        membership = self.membership[index]
+        return id_, img, label, membership, logits

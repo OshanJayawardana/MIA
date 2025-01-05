@@ -7,50 +7,16 @@ from sklearn.cluster import KMeans
 import torch
 from tqdm import tqdm
 import hashlib
-from preprocess import MembershipDataset, PseudoLabelDataset
+from preprocess import PseudoLabelDataset
+from process import get_sample
 from model import load_target_model, train_resnet18
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def append_sample(dataset: PseudoLabelDataset, sample: PseudoLabelDataset) -> PseudoLabelDataset:
-    """Append the sample dataset to the dataset. This is done by concatenating the ids, imgs, labels, and membership
-    of the sample dataset to the dataset.
-    """
-    new_dataset = PseudoLabelDataset()
-    new_dataset.ids = dataset.ids + sample.ids
-    new_dataset.imgs = dataset.imgs + sample.imgs
-    new_dataset.labels = dataset.labels + sample.labels
-    new_dataset.membership = dataset.membership + sample.membership
-    new_dataset.pseudo_labels = dataset.pseudo_labels + sample.pseudo_labels
-    return new_dataset
 
-def pop_sample(dataset: PseudoLabelDataset, index: int) -> tuple[PseudoLabelDataset, PseudoLabelDataset]:
-    """Pop the sample dataset at the index. Return the popped sample and the new dataset.
-    """
-    sample = get_sample(dataset, index)
-    new_dataset = PseudoLabelDataset()
-    new_dataset.ids = dataset.ids[:index] + dataset.ids[index+1:]
-    new_dataset.imgs = dataset.imgs[:index] + dataset.imgs[index+1:]
-    new_dataset.labels = dataset.labels[:index] + dataset.labels[index+1:]
-    new_dataset.membership = dataset.membership[:index] + dataset.membership[index+1:]
-    new_dataset.pseudo_labels = dataset.pseudo_labels[:index] + dataset.pseudo_labels[index+1:]
-    return sample, new_dataset
-
-def get_sample(dataset: PseudoLabelDataset, index: int | list[int]) -> PseudoLabelDataset:
-    """Get the sample dataset at the index. This is done by creating a new PseudoLabelDataset and copying the ids, imgs,
-    labels, and membership of the dataset at the index to the new dataset.
-    """
-    sample = PseudoLabelDataset()
-    if isinstance(index, int):
-        index = [index]
-    sample.ids = [dataset.ids[i] for i in index]
-    sample.imgs = [dataset.imgs[i] for i in index]
-    sample.labels = [dataset.labels[i] for i in index]
-    sample.membership = [dataset.membership[i] for i in index]
-    sample.pseudo_labels = [dataset.pseudo_labels[i] for i in index]
-    return sample
-
-def select_representative_embeddings(embeddings, num_representatives=250, random_state=42):
+def select_representative_embeddings(
+    embeddings, num_representatives=250, random_state=42
+):
     """
     Select a representative subset of embeddings to cover the embedding space.
 
@@ -63,7 +29,9 @@ def select_representative_embeddings(embeddings, num_representatives=250, random
     - numpy.ndarray: Array of selected representative embeddings.
     """
     # Step 1: Flatten each embedding
-    flattened_embeddings = embeddings.reshape(embeddings.shape[0], -1)  # Shape becomes (N, 3072)
+    flattened_embeddings = embeddings.reshape(
+        embeddings.shape[0], -1
+    )  # Shape becomes (N, 3072)
 
     # Step 2: Apply K-means clustering
     kmeans = KMeans(n_clusters=num_representatives, random_state=random_state)
@@ -75,18 +43,22 @@ def select_representative_embeddings(embeddings, num_representatives=250, random
         # Get all points in the current cluster
         cluster_points = flattened_embeddings[kmeans.labels_ == i]
         cluster_indices = np.where(kmeans.labels_ == i)[0]
-        
+
         # Find the point closest to the cluster center
         center = kmeans.cluster_centers_[i]
-        closest_index = cluster_indices[np.argmin(np.linalg.norm(cluster_points - center, axis=1))]
+        closest_index = cluster_indices[
+            np.argmin(np.linalg.norm(cluster_points - center, axis=1))
+        ]
         representative_indices.append(closest_index)
 
     # Step 4: Return the selected embeddings
     return representative_indices
 
-def sample_datasets(source_dataset: PseudoLabelDataset, n: int=2, random_state: int=42) -> list[PseudoLabelDataset]:
-    """Devide the dataset into n subsets. The subsets are created by shuffling the dataset and splitting it into n parts.
-    """
+
+def sample_datasets(
+    source_dataset: PseudoLabelDataset, n: int = 2, random_state: int = 42
+) -> list[PseudoLabelDataset]:
+    """Devide the dataset into n subsets. The subsets are created by shuffling the dataset and splitting it into n parts."""
     np.random.seed(random_state)
     indexes = np.random.permutation(len(source_dataset))
     # split indexes into n parts
@@ -94,24 +66,28 @@ def sample_datasets(source_dataset: PseudoLabelDataset, n: int=2, random_state: 
     datasets = [get_sample(source_dataset, split[i]) for i in range(n)]
     return datasets
 
+
 def create_dataset_hash(dataset: PseudoLabelDataset) -> str:
-    """Create a stable hash of the dataset using SHA-256. The hash is created by concatenating the ids of the dataset 
+    """Create a stable hash of the dataset using SHA-256. The hash is created by concatenating the ids of the dataset
     and hashing the resulting string, ensuring consistency across runs."""
     ids_str = "".join(map(str, dataset.ids)).encode("utf-8")
     return hashlib.sha256(ids_str).hexdigest()[:8]
 
+
 def create_model_hash(model: torch.nn.Module) -> str:
-    """Create a hash of the model. The hash is created by hashing the model state dictionary using SHA-256.
-    """
-    model_str = str(model.state_dict()).encode('utf-8')
+    """Create a hash of the model. The hash is created by hashing the model state dictionary using SHA-256."""
+    model_str = str(model.state_dict()).encode("utf-8")
     return hashlib.sha256(model_str).hexdigest()[:8]
 
-def create_reference_models(source_dataset: PseudoLabelDataset, k: int=8, path: str="models"):
+
+def create_reference_models(
+    source_dataset: PseudoLabelDataset, k: int = 8, path: str = "models"
+):
     """Create n models and train them on the dataset. The models are trained using the train_resnet18 function
     with variable epochs. The models are stored in a list and returned.
     """
-    k = k//2
-    epoch_list = [20]*k
+    k = k // 2
+    epoch_list = [20] * k
     datasets = sample_datasets(source_dataset, n=2)
     for epoch in epoch_list:
         for i in range(2):
@@ -136,17 +112,30 @@ def pr_x_given_theta(sample: PseudoLabelDataset, model: torch.nn.Module) -> floa
         prob = probs[0, label]
     return prob.item()
 
+
 def pr_x_out(sample: PseudoLabelDataset, out_models: list[torch.nn.Module]) -> float:
     probs = [pr_x_given_theta(sample, model) for model in out_models]
     return np.mean(probs)
 
-def pr_x(sample: PseudoLabelDataset, out_models: list[torch.nn.Module], a: float) -> float:
-    return 0.5 *((1+a)*pr_x_out(sample, out_models)+(1-a))
 
-def ratio_x(sample: PseudoLabelDataset, out_models: list[torch.nn.Module], target_model: torch.nn.Module, a: float) -> float:
+def pr_x(
+    sample: PseudoLabelDataset, out_models: list[torch.nn.Module], a: float
+) -> float:
+    return 0.5 * ((1 + a) * pr_x_out(sample, out_models) + (1 - a))
+
+
+def ratio_x(
+    sample: PseudoLabelDataset,
+    out_models: list[torch.nn.Module],
+    target_model: torch.nn.Module,
+    a: float,
+) -> float:
     return pr_x_given_theta(sample, target_model) / pr_x(sample, out_models, a)
 
-def pr_z_batch(z: PseudoLabelDataset, out_models: list[torch.nn.Module]) -> torch.Tensor:
+
+def pr_z_batch(
+    z: PseudoLabelDataset, out_models: list[torch.nn.Module]
+) -> torch.Tensor:
     """Calculate the probabilities of the distribution dataset given the models in parallel."""
     probs = []
     for model in out_models:
@@ -160,7 +149,12 @@ def pr_z_batch(z: PseudoLabelDataset, out_models: list[torch.nn.Module]) -> torc
             probs.append(model_probs[range(len(labels)), labels])
     return torch.mean(torch.stack(probs), dim=0)
 
-def ratio_z_batch(z: PseudoLabelDataset, out_models: list[torch.nn.Module], target_model: torch.nn.Module) -> torch.Tensor:
+
+def ratio_z_batch(
+    z: PseudoLabelDataset,
+    out_models: list[torch.nn.Module],
+    target_model: torch.nn.Module,
+) -> torch.Tensor:
     """Calculate the ratio of the probabilities of the distribution dataset given the target model and out models in parallel."""
     target_model.eval()
     target_model.to(device)
@@ -173,14 +167,30 @@ def ratio_z_batch(z: PseudoLabelDataset, out_models: list[torch.nn.Module], targ
     pr_z_vals = pr_z_batch(z, out_models)
     return target_probs / pr_z_vals
 
-def rmia_score(sample: PseudoLabelDataset, out_models: list[torch.nn.Module], target_model: torch.nn.Module, a: float, z: PseudoLabelDataset, gamma: float=2) -> float:
+
+def rmia_score(
+    sample: PseudoLabelDataset,
+    out_models: list[torch.nn.Module],
+    target_model: torch.nn.Module,
+    a: float,
+    z: PseudoLabelDataset,
+    gamma: float = 2,
+) -> float:
     count = 0
     ratio_x_val = ratio_x(sample, out_models, target_model, a)
     ratio_z_vals = ratio_z_batch(z, out_models, target_model)
     count = torch.sum(ratio_x_val / ratio_z_vals > gamma).item()
     return count / len(z)
 
-def get_rmia_score(test_dataset: PseudoLabelDataset, out_models: list[torch.nn.Module], target_model: torch.nn.Module, a: float, z: PseudoLabelDataset, gamma: float=2) -> float:
+
+def get_rmia_score(
+    test_dataset: PseudoLabelDataset,
+    out_models: list[torch.nn.Module],
+    target_model: torch.nn.Module,
+    a: float,
+    z: PseudoLabelDataset,
+    gamma: float = 2,
+) -> float:
     """Return scores for the test dataset. The score is calculated using the RMIA formula."""
     scores = []
     for i in tqdm(range(len(test_dataset)), desc="Calculating RMIA score"):
@@ -189,7 +199,10 @@ def get_rmia_score(test_dataset: PseudoLabelDataset, out_models: list[torch.nn.M
         scores.append(score)
     return scores
 
-def select_closest_embeddings(distribution_data: PseudoLabelDataset, test_dataset: PseudoLabelDataset, n: int) -> list[int]:
+
+def select_closest_embeddings(
+    distribution_data: PseudoLabelDataset, test_dataset: PseudoLabelDataset, n: int
+) -> list[int]:
     """From the distribution data, select the n closest embeddings to the test dataset embedding distribution.
     First for each sample in distribution data, calculate the average distance to all samples in the test dataset.
     Then select the n samples with the lowest average distance.
@@ -198,12 +211,24 @@ def select_closest_embeddings(distribution_data: PseudoLabelDataset, test_datase
     distribution_embeddings = np.array([img for _, img, _, _, _ in distribution_data])
     avg_distances = []
     for i in range(len(distribution_data)):
-        avg_distance = np.mean(np.linalg.norm(test_embeddings - distribution_embeddings[i], axis=1))
+        avg_distance = np.mean(
+            np.linalg.norm(test_embeddings - distribution_embeddings[i], axis=1)
+        )
         avg_distances.append(avg_distance)
     indexes = np.argsort(avg_distances)[:n]
     return indexes
 
-def rmia_attack(distribution_data: PseudoLabelDataset, test_dataset: PseudoLabelDataset,k: int, a: float, num_z: int, gamma: float=2, path: str="models", force_model_create: bool=False) -> list[float]:
+
+def rmia_attack(
+    distribution_data: PseudoLabelDataset,
+    test_dataset: PseudoLabelDataset,
+    k: int,
+    a: float,
+    num_z: int,
+    gamma: float = 2,
+    path: str = "models",
+    force_model_create: bool = False,
+) -> list[float]:
     """Perform the RMIA attack. The attack is performed by splitting the distribution dataset into k parts, training
     k models on each part, and calculating the RMIA score for the test dataset. The RMIA score is calculated using the
     RMIA formula.
@@ -218,19 +243,26 @@ def rmia_attack(distribution_data: PseudoLabelDataset, test_dataset: PseudoLabel
     out_models = [torch.load(f"{path}/{name}") for name in model_names]
     # load the target model
     target_model = load_target_model()
-    #only pick num_z random samples from the distribution data. if num_z is -1, use all samples
+    # only pick num_z random samples from the distribution data. if num_z is -1, use all samples
     if num_z != -1:
-        indexes = select_closest_embeddings(distribution_data, test_dataset, num_z)
+        # indexes = select_closest_embeddings(distribution_data, test_dataset, num_z)
+        indexes = np.random.choice(len(distribution_data), num_z, replace=False)
         z = get_sample(distribution_data, indexes)
 
     # calculate the RMIA score
     scores = get_rmia_score(test_dataset, out_models, target_model, a, z, gamma)
     return scores, out_models
 
-    
-def cross_val(distribution_data: PseudoLabelDataset, k: int, a: float, num_z: int, gamma: float=2, num_runs: int=5):
-    """ Perform cross validation for the RMIA attack. The attack is performed num_runs times and the average score
-    """
+
+def cross_val(
+    distribution_data: PseudoLabelDataset,
+    k: int,
+    a: float,
+    num_z: int,
+    gamma: float = 2,
+    num_runs: int = 5,
+):
+    """Perform cross validation for the RMIA attack. The attack is performed num_runs times and the average score"""
     tpr_at_fpr_list = []
     for _ in range(num_runs):
         # shuffle the distribution data
@@ -239,11 +271,15 @@ def cross_val(distribution_data: PseudoLabelDataset, k: int, a: float, num_z: in
 
         # split the dataset in 0.8:0.2 ratio
         split = int(0.8 * len(distribution_data))
-        test_dataset = get_sample(distribution_data, list(range(split, len(distribution_data))))
+        test_dataset = get_sample(
+            distribution_data, list(range(split, len(distribution_data)))
+        )
         distribution_data = get_sample(distribution_data, list(range(split)))
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            predicted_scores, out_models = rmia_attack(distribution_data, test_dataset, k, a, num_z, gamma, path=temp_dir)
+            predicted_scores, out_models = rmia_attack(
+                distribution_data, test_dataset, k, a, num_z, gamma, path=temp_dir
+            )
 
         predicted_scores = np.array(predicted_scores)
         ground_truth = np.array(test_dataset.membership)
@@ -265,26 +301,25 @@ def cross_val(distribution_data: PseudoLabelDataset, k: int, a: float, num_z: in
             for i, model in enumerate(out_models):
                 torch.save(model, f"models/{tpr_at_fpr_str}/model_{i}.pt")
 
-
     tpr_at_fpr = np.array(tpr_at_fpr_list)
     return np.mean(tpr_at_fpr), np.std(tpr_at_fpr)
+
 
 def metrics(predicted_scores: np.array, ground_truth: np.array) -> float:
     fpr, tpr, _ = roc_curve(ground_truth, predicted_scores)
     tpr_at_fpr = np.interp(0.05, fpr, tpr)
     return tpr_at_fpr
-        
+
+
 if __name__ == "__main__":
     k = 4
-    num_z = 2500
+    num_z = 250
     a = 0.5
     gamma = 2
     num_runs = 100
 
-    distribution_data: PseudoLabelDataset = torch.load("data/pub_w_pseudo.pt")
-    test_dataset: PseudoLabelDataset = torch.load("data/priv_out_w_pseudo.pt")
-    train_dataset: PseudoLabelDataset = torch.load("data/train_w_pseudo.pt")
-    val_dataset: PseudoLabelDataset = torch.load("data/val_w_pseudo.pt")
+    distribution_data: PseudoLabelDataset = torch.load("data/pub_overwrite.pt")
+    test_dataset: PseudoLabelDataset = torch.load("data/priv_overwrite.pt")
 
     # cross validation
     # tpr_at_fpr, std = cross_val(distribution_data, k, a, num_z, gamma, num_runs)
@@ -297,7 +332,15 @@ if __name__ == "__main__":
     # tpr_at_fpr = metrics(scores, ground_truth)
     # print(f"TPR at FPR = 0.05: {tpr_at_fpr}")
 
-
-    scores, _ = rmia_attack(distribution_data, test_dataset, k, a, num_z, gamma, path="models/val", force_model_create=False)
+    scores, _ = rmia_attack(
+        distribution_data,
+        test_dataset,
+        k,
+        a,
+        num_z,
+        gamma,
+        path="models/shadow",
+        force_model_create=False,
+    )
     df = pd.DataFrame({"ids": test_dataset.ids, "score": scores})
-    df.to_csv(f"rmia_offline_scores_a_{a}.csv", index=False)
+    df.to_csv("rmia_offline_35.csv", index=False)

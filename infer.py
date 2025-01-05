@@ -24,21 +24,11 @@ def infer(model: Module, data: MembershipDataset) -> torch.Tensor:
     model.to(device)
     with torch.no_grad():
         scores = []
-        for _, img, _, _ in data:
+        for _, img, _, _, _ in data:
             logits = model(img[None, ...].to(device))
             scores.append(logits.cpu())
         scores = torch.cat(scores)
     return scores
-    # score_dict = {f"score_class_{i}": scores[:, i] for i in range(scores.shape[1])}
-    # df = pd.DataFrame(
-    #     {
-    #         "ids": data.ids,
-    #         "label": data.labels,
-    #         "membership": data.membership,
-    #         **score_dict
-    #     }
-    # )
-    # return df
 
 if __name__ == "__main__":
     model = load_target_model()
