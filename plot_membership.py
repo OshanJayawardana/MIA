@@ -17,7 +17,7 @@ for i, ax in enumerate(axs.flat):
     ax.imshow(non_members[i])
     ax.axis("off")
 plt.suptitle("Non-members")
-plt.savefig("non_members.pdf")
+plt.savefig("figures/non_members.png")
 
 # plot first 20 members
 fig, axs = plt.subplots(4, 5)
@@ -25,6 +25,6 @@ for i, ax in enumerate(axs.flat):
     ax.imshow(members[i])
     ax.axis("off")
 plt.suptitle("Members")
-plt.savefig("members.pdf")
+plt.savefig("figures/members.png")
 
 

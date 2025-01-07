@@ -85,28 +85,28 @@ def get_logit_distributions(dataset: MembershipDataset, model: torch.nn.Module) 
 
     return torch.tensor(logit_distributions), membership
 
-# dataset = torch.load("data/pub.pt")
-# logit_distributions, new_membership = get_logit_distributions(dataset, target_model)
+dataset = torch.load("data/pub.pt")
+logit_distributions, new_membership = get_logit_distributions(dataset, target_model)
 
-# # Plot two logit histograms for membership 0 and 1 in the same plot
-# non_members = [logit.item() for i, logit in enumerate(logit_distributions) if new_membership[i] == 0]
-# members = [logit.item() for i, logit in enumerate(logit_distributions) if new_membership[i] == 1]
+# Plot two logit histograms for membership 0 and 1 in the same plot
+non_members = [logit.item() for i, logit in enumerate(logit_distributions) if new_membership[i] == 0]
+members = [logit.item() for i, logit in enumerate(logit_distributions) if new_membership[i] == 1]
 
-# fig, axs = plt.subplots(2, 1, sharex=True)
-# axs[0].hist(non_members, bins=50, color="red")
-# axs[0].set_title("Non-members")
-# axs[0].set_xlabel("Logit")
-# axs[0].set_ylabel("Frequency")
-# axs[1].hist(members, bins=50, color="blue")
-# axs[1].set_title("Members")
-# axs[1].set_xlabel("Logit")
-# axs[1].set_ylabel("Frequency")
-# plt.tight_layout()
-# plt.savefig("logit_histograms.pdf")
+fig, axs = plt.subplots(2, 1, sharex=True)
+axs[0].hist(non_members, bins=50, color="red")
+axs[0].set_title("Non-members")
+axs[0].set_xlabel("Logit")
+axs[0].set_ylabel("Frequency")
+axs[1].hist(members, bins=50, color="blue")
+axs[1].set_title("Members")
+axs[1].set_xlabel("Logit")
+axs[1].set_ylabel("Frequency")
+plt.tight_layout()
+plt.savefig("figures/patched_logit_difference_histograms.png")
 
-test_dataset = torch.load("data/priv_out.pt")
-logit_distributions, new_membership = get_logit_distributions(test_dataset, target_model)
-ids = test_dataset.ids
-score = logit_distributions
-df = pd.DataFrame({"ids": ids, "score": score})
-df.to_csv("results/patch.csv", index=False)
+# test_dataset = torch.load("data/priv_out.pt")
+# logit_distributions, new_membership = get_logit_distributions(test_dataset, target_model)
+# ids = test_dataset.ids
+# score = logit_distributions
+# df = pd.DataFrame({"ids": ids, "score": score})
+# df.to_csv("results/patch.csv", index=False)

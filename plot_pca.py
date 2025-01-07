@@ -17,4 +17,4 @@ for i in range(44):
     points = label_points[i]
     plt.scatter(points[:, 0], points[:, 1], label=f"Class {i}")
 plt.legend()
-plt.savefig("pca.pdf")
+plt.savefig("figures/pca.png")
