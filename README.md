@@ -7,6 +7,13 @@ A membership inference attack on Resnet18
 
 TPR@0.05FPR = 0.059
 
+## Random patches
+
+You can observe there are random patches present in the membership data. Hypothesis is, member data has high resistance to these patches.
+When random patches are added to test samples, we observe the change of logits to infer the membership
+
+TPR@0.05FPR = 0.058333333333333334
+
 ## RMIA Offline
 
 Initially experiments are done to select best `a` value for the offline attack.
@@ -23,7 +30,7 @@ For the `a` experiments we fix gamma=2, k(num_reference_models)=8, |Z| = 500
 
 These values have high variance, due to the randomness in training shadow models.
 
-## About the dataset
+## About the datasetpresent in some images
 
 Eventhough the underlying distribution is unknown, we can extract some information from pub.pt
 
@@ -41,6 +48,8 @@ But one important thing to notice is that there are different types of classes v
 Below are 5 images per class
 
 ![image](https://github.com/OshanJayawardana/MIA/blob/main/figures/class_images.png)
+
+You can observe random patches present in some images. These patches can be utilize for a membership attack.
 
 Below is a pca plot of the pub.pt
 
