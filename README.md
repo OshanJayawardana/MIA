@@ -12,6 +12,14 @@ TPR@0.05FPR = 0.059
 You can observe there are random patches present in the membership data. Hypothesis is, member data has high resistance to these patches.
 When random patches are added to test samples, we observe the change of logits to infer the membership
 
+score = -(augmented_logit - original_logit)
+
+The score distributions for members and non members are as below
+
+![image](https://github.com/OshanJayawardana/MIA/blob/main/figures/patched_logit_difference_histograms.png)
+
+You can observe a slight right shift for the members
+
 TPR@0.05FPR = 0.058333333333333334
 
 ## RMIA Offline
