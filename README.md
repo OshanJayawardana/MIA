@@ -39,3 +39,11 @@ There are no visible differences between members and non-members.
 But one important thing to notice is that there are different types of classes varying from blood cell images to animal images.
 
 Below are 5 images per class
+
+![image](https://github.com/OshanJayawardana/MIA/blob/main/figures/class_images.png)
+
+Below is a pca plot of the pub.pt
+
+![image](https://github.com/OshanJayawardana/MIA/blob/main/figures/pca.png)
+
+You can observe a symmetry in the PCA
