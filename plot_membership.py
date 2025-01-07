@@ -29,7 +29,7 @@ plt.savefig("figures/members.png")
 
 # from each class(0-43) plot 5 random images
 label_points = {i: [img.permute(1, 2, 0).numpy() for j, img in enumerate(dataset.imgs) if dataset.labels[j] == i] for i in range(44)}
-fig, axs = plt.subplots(44, 4, figsize=(12.8, 140.8))
+fig, axs = plt.subplots(44, 4, figsize=(1.28, 14.08))
 for i in range(44):
     random.shuffle(label_points[i])
     for j, ax in enumerate(axs[i]):
