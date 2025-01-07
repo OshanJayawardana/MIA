@@ -122,8 +122,8 @@ def append_activations(dataset: MembershipDataset) -> ActivationDataset:
     return new_dataset
 
 dataset_list = [
-    # ("data/pub.pt", "data/pub_w_activations.pt"),
-    ("data/priv_out.pt", "data/priv_out_w_activations.pt"),
+    ("data/pub.pt", "data/pub_w_activations.pt"),
+    # ("data/priv_out.pt", "data/priv_out_w_activations.pt"),
 ]
 
 for dataset_path, save_path in dataset_list:

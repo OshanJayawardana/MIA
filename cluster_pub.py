@@ -41,8 +41,6 @@ def train_svms(distributions: list[tuple[np.ndarray, np.ndarray]]) -> list:
     for logits, membership in distributions:
         model = SVC(probability=True)
         model.fit(logits, membership)
-        model = CalibratedClassifierCV(model)
-        model.fit(logits, membership)
         svms.append(model)
     return svms
 
@@ -57,7 +55,7 @@ def get_closest_svm_output(sample: torch.Tensor, logit: np.ndarray, svms: list, 
     sample = sample.view(1, -1).numpy()
     logit = logit.reshape(1, -1)
     closest_cluster = np.argmin(np.linalg.norm(sample - cluster_centers, axis=1))
-    return svms[closest_cluster].predict_proba(logit)[0][1]
+    return svms[closest_cluster].decision_function(logit)[0]
 
 test_dataset = torch.load("data/priv_out_w_logits.pt")
 ids = test_dataset.ids
